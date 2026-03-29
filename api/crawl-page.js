@@ -1,5 +1,14 @@
 import { initCrawlTask, getNextTaskToProcess, getLatestCrawlTask } from '../lib/crawl-tasks.js';
 import { crawlSinglePage, sleep } from '../lib/crawler.js';
+import { Client as QstashClient } from '@upstash/qstash';
+
+// 初始化 QStash 客户端
+const qstashClient = process.env.QSTASH_URL && process.env.QSTASH_SIGNING_KEY
+  ? new QstashClient({
+      url: process.env.QSTASH_URL,
+      token: process.env.QSTASH_SIGNING_KEY
+    })
+  : null;
 
 export default async function handler(request, response) {
   try {
@@ -99,39 +108,34 @@ export default async function handler(request, response) {
         // 检查是否是自动连续触发模式
         const isAutoChain = request.query.auto === 'true';
         
-        // 如果是自动连续触发模式且未跳过，等待 10 秒后触发下一个请求
+        // 如果是自动连续触发模式且未跳过，使用 QStash 调度下一个请求
         if (isAutoChain && !result.skipped) {
-          console.log(`Auto-chaining: Will trigger page ${result.nextPage} in 5 seconds...`);
+          console.log(`Auto-chaining: Will schedule page ${result.nextPage} in 5 seconds via QStash...`);
           
-          try {
-            // 等待 5 秒
-            await sleep(5000);
-            
-            const baseUrl = `https://problems.amlg.top/api/crawl-page?auto=true`;
-            
-            console.log(`Triggering next page: ${baseUrl}`);
-            
-            // 使用 fetch 触发下一个请求（生产环境）
-            if (process.env.VERCEL === '1') {
-              const fetchResponse = await fetch(baseUrl, {
-                method: 'GET',
+          if (qstashClient) {
+            try {
+              // 使用 QStash 调度 5 秒后的请求
+              const scheduleResult = await qstashClient.publishJSON({
+                url: new URL('/api/crawl-page?auto=true', request.headers.host 
+                  ? `https://${request.headers.host}` 
+                  : process.env.VERCEL_URL 
+                    ? `https://${process.env.VERCEL_URL}` 
+                    : 'http://localhost:3000').toString(),
+                body: {},
                 headers: {
                   'x-vercel-cron-schedule': '1',
-                  'authorization': "Bearer " + process.env.CRON_SECRET || ''
-                }
+                  'authorization': 'Bearer ' + process.env.CRON_SECRET || ''
+                },
+                delay: '5s' // 5 秒后执行
               });
               
-              if (!fetchResponse.ok) {
-                console.error('Error: Next page request failed with status:', fetchResponse.status);
-                const errorText = await fetchResponse.text();
-                console.error('Error response:', errorText);
-              } else {
-                console.log('Next page triggered successfully!');
-              }
+              console.log('Next page scheduled via QStash:', scheduleResult);
+            } catch (err) {
+              console.error('Error scheduling next page via QStash:', err.message);
+              console.error('Stack trace:', err.stack);
             }
-          } catch (err) {
-            console.error('Error triggering next page:', err.message);
-            console.error('Stack trace:', err.stack);
+          } else {
+            console.warn('QStash not configured, skipping auto-chain');
           }
         }
         
@@ -144,12 +148,7 @@ export default async function handler(request, response) {
           nextPage: result.nextPage,
           skipped: result.skipped || false,
           autoChain: isAutoChain && !result.skipped,
-          // 告诉客户端应该等待多久后发起下一个请求（毫秒）
-          nextTriggerDelay: isAutoChain && !result.skipped ? 10000 : null,
-          // 下一个请求的 URL
-          nextUrl: isAutoChain && !result.skipped 
-            ? `/api/crawl-page?auto=true` 
-            : null
+          scheduledViaQStash: !!(qstashClient && isAutoChain && !result.skipped)
         };
         
         return response.status(200).json(responseData);

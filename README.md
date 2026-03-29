@@ -404,7 +404,44 @@ GET /api/crawl-page?force=true
    - **Environment**: 勾选 **Production**, **Preview**, **Development**
    - 点击 **Save**
 
-#### 第五步：部署项目
+#### 第五步：配置 Upstash QStash（推荐用于自动链式爬取）
+
+**为什么需要 QStash？**
+
+由于 Vercel Serverless Function 的限制，无法在响应后延迟触发新的请求。QStash 可以可靠地调度延迟请求，实现自动链式爬取。
+
+1. **注册 Upstash**
+   - 访问 [upstash.com](https://upstash.com)
+   - 使用 GitHub 账号登录（推荐）或邮箱注册
+
+2. **创建 QStash 实例**
+   - 在 Dashboard 点击 **Create Database**
+   - 选择 **QStash**（不是 Redis）
+   - 填写信息：
+     - **Name**: luogu-crawler-qstash
+     - **Region**: 选择离你最近的（推荐 `us-east-1`）
+   - 点击 **Create**
+
+3. **获取凭证**
+   - 创建完成后，复制以下信息：
+     - **QSTASH_URL**: QStash 的 API 地址（例如：`https://qstash.upstash.io/...`）
+     - **QSTASH_SIGNING_KEY**: 签名密钥
+
+4. **配置 Vercel 环境变量**
+   - 在 Vercel 项目导入页面，点击 **Environment Variables** 标签
+   - 添加以下环境变量：
+     1. **Name**: `QSTASH_URL`
+        **Value**: 粘贴 QSTASH_URL
+        **Environment**: 勾选 Production, Preview, Development
+        点击 **Save**
+     2. **Name**: `QSTASH_SIGNING_KEY`
+        **Value**: 粘贴 QSTASH_SIGNING_KEY
+        **Environment**: 勾选 Production, Preview, Development
+        点击 **Save**
+
+**注意**：如果不配置 QStash，系统仍然可以正常工作，但需要手动调用 `/api/crawl-page?auto=true` 来触发爬取。
+
+#### 第六步：部署项目
 
 1. **开始部署**
    - 在项目导入页面，点击 **Deploy**
@@ -415,7 +452,7 @@ GET /api/crawl-page?force=true
    - 点击 **Visit** 查看项目首页
    - 访问 `<your-domain>.vercel.app/api/all` 验证 API 是否正常工作
 
-#### 第六步：验证 Cron Jobs 配置
+#### 第七步：验证 Cron Jobs 配置
 
 1. **查看 Cron Jobs**
    - 在 Vercel 项目 Dashboard 中，点击 **Settings**
