@@ -112,27 +112,46 @@ export default async function handler(request, response) {
         if (isAutoChain && !result.skipped) {
           console.log(`Auto-chaining: Will schedule page ${result.nextPage} in 5 seconds via QStash...`);
           
-          if (qstashClient) {
+          // 检查 QStash 配置
+          const hasQStashConfig = !!(process.env.QSTASH_URL && process.env.QSTASH_SIGNING_KEY);
+          console.log('QStash config check:', {
+            hasURL: !!process.env.QSTASH_URL,
+            hasToken: !!process.env.QSTASH_SIGNING_KEY,
+            clientInitialized: !!qstashClient
+          });
+          
+          if (qstashClient && hasQStashConfig) {
+            console.log('Attempting to schedule via QStash...');
+            
+            // 使用 Promise.race 添加超时保护
+            const schedulePromise = qstashClient.publishJSON({
+              url: 'https://problems.amlg.top/api/crawl-page?auto=true',
+              body: {},
+              headers: {
+                'x-vercel-cron-schedule': '1',
+                'authorization': 'Bearer ' + process.env.CRON_SECRET || ''
+              },
+              delay: '5s' // 5 秒后执行
+            });
+            
+            const timeoutPromise = new Promise((_, reject) => {
+              setTimeout(() => reject(new Error('QStash scheduling timeout (5s)')), 5000);
+            });
+            
             try {
-              // 使用 QStash 调度 5 秒后的请求
-              const scheduleResult = await qstashClient.publishJSON({
-                url: 'https://problems.amlg.top/api/crawl-page?auto=true',
-                body: {},
-                headers: {
-                  'x-vercel-cron-schedule': '1',
-                  'authorization': 'Bearer ' + process.env.CRON_SECRET || ''
-                },
-                delay: '5s' // 5 秒后执行
-              });
-              
+              // 最多等待 5 秒
+              const scheduleResult = await Promise.race([schedulePromise, timeoutPromise]);
               console.log('Next page scheduled via QStash:', scheduleResult);
             } catch (err) {
               console.error('Error scheduling next page via QStash:', err.message);
-              console.error('Stack trace:', err.stack);
-              console.log('Error details:', err);
+              if (err.stack) {
+                console.error('Stack trace:', err.stack);
+              }
+              console.log('Continuing without auto-chain...');
             }
           } else {
-            console.warn('QStash not configured, skipping auto-chain');
+            console.warn('QStash not configured properly, skipping auto-chain');
+            console.warn('Please set QSTASH_URL and QSTASH_SIGNING_KEY environment variables');
           }
         }
         
