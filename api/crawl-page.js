@@ -89,6 +89,38 @@ export default async function handler(request, response) {
           forceRefresh
         });
       } else {
+        // 检查是否是自动连续触发模式
+        const isAutoChain = request.query.auto === 'true';
+        
+        if (isAutoChain && !result.skipped) {
+          // 自动连续触发模式：10 秒后触发下一页
+          console.log(`Auto-chaining: Will trigger page ${result.nextPage} in 10 seconds...`);
+          
+          // 10 秒后异步触发下一个 crawl-page
+          setTimeout(async () => {
+            try {
+              const baseUrl = request.headers.host 
+                ? `https://${request.headers.host}/api/crawl-page?auto=true`
+                : `/api/crawl-page?auto=true`;
+              
+              console.log(`Triggering next page: ${baseUrl}`);
+              
+              // 使用 fetch 触发下一个请求（生产环境）
+              if (process.env.VERCEL === '1') {
+                await fetch(`https://${request.headers.host}/api/crawl-page?auto=true`, {
+                  method: 'GET',
+                  headers: {
+                    'x-vercel-cron-schedule': '1',
+                    'x-vercel-cron-secret': process.env.CRON_SECRET || ''
+                  }
+                });
+              }
+            } catch (err) {
+              console.error('Error triggering next page:', err);
+            }
+          }, 10000); // 10 秒后触发
+        }
+        
         return response.status(200).json({
           message: result.skipped ? `Skipped ${type} page ${page} (already crawled)` : `Crawled ${type} page ${page} successfully`,
           taskId: task.id,
@@ -96,7 +128,8 @@ export default async function handler(request, response) {
           nextType: result.nextType,
           nextPage: result.nextPage,
           skipped: result.skipped || false,
-          timeout: 280000
+          autoChain: isAutoChain && !result.skipped,
+          nextTrigger: isAutoChain && !result.skipped ? '10 seconds' : null
         });
       }
     } else {

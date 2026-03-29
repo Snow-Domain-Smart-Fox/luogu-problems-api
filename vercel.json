@@ -37,7 +37,7 @@
     },
     {
       "path": "/api/crawl-page",
-      "schedule": "*/7 * * * *"
+      "schedule": "10 0 1 * *"
     }
   ]
 }

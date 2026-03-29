@@ -36,8 +36,81 @@ Vercel Serverless Functions 有严格的超时限制：
 4. **完成检测**: 当所有题型的所有页面都爬取完成后，标记任务为 completed
 
 ### Cron 配置
-- **`/api/cron`**: 每月 1 日执行，用于启动新的爬取任务或清空数据
-- **`/api/crawl-page`**: 每 5 分钟执行一次，用于分页爬取和超时恢复
+
+项目配置了 Vercel Cron Jobs：
+
+- **`/api/cron`**: 每月 1 日 UTC 0:00（北京时间 8:00）执行
+  - 创建新的爬取任务
+  - 可选清空数据重新开始
+  
+- **`/api/crawl-page`**: 每月 1 日 UTC 0:10（北京时间 8:10）执行
+  - 在 `/api/cron` 触发后 10 分钟启动
+  - 开始爬取第 1 页
+  - **自动连续触发**：每页完成后 10 秒自动触发下一页
+  - 直到所有页面爬取完成
+
+### 自动连续爬取机制
+
+为了在 Vercel Hobby 账户限制下快速完成爬取，系统实现了自动连续触发机制：
+
+**工作流程**：
+
+```
+08:00 - /api/cron 触发
+        ↓
+        创建任务
+        ↓
+08:10 - /api/crawl-page 触发（Cron）
+        ↓
+        爬取 page 1
+        ↓
+        检查未完成 → 等待 10 秒
+        ↓
+        自动触发 /api/crawl-page?page=2&auto=true
+        ↓
+        爬取 page 2
+        ↓
+        检查未完成 → 等待 10 秒
+        ↓
+        自动触发 /api/crawl-page?page=3&auto=true
+        ↓
+        ...
+        ↓
+        爬取 page 250
+        ↓
+        完成！
+```
+
+**时间计算**：
+- 每页爬取：~1-2 秒
+- 每页间隔：10 秒
+- 250 页总计：~42 分钟
+
+**响应示例**：
+
+```json
+{
+  "message": "Crawled luogu page 1 successfully",
+  "taskId": 1,
+  "completed": false,
+  "nextType": "luogu",
+  "nextPage": 2,
+  "skipped": false,
+  "autoChain": true,
+  "nextTrigger": "10 seconds"
+}
+```
+
+**参数说明**：
+- `auto=true`: 启用自动连续触发模式
+- 只有 `auto=true` 且成功爬取（未跳过）时，才会触发下一页
+
+**优势**：
+- ✅ 符合 Vercel Hobby 限制（每天 1 次 Cron）
+- ✅ 快速完成首次爬取（42 分钟 vs 250 天）
+- ✅ 自动跳过已爬取的页面
+- ✅ 超时自动恢复
+- ✅ 30 天冷却期
 
 ### 优势
 - ✅ 不受 Vercel 超时限制影响
