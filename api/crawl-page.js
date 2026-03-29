@@ -116,11 +116,7 @@ export default async function handler(request, response) {
             try {
               // 使用 QStash 调度 5 秒后的请求
               const scheduleResult = await qstashClient.publishJSON({
-                url: new URL('/api/crawl-page?auto=true', request.headers.host 
-                  ? `https://${request.headers.host}` 
-                  : process.env.VERCEL_URL 
-                    ? `https://${process.env.VERCEL_URL}` 
-                    : 'http://localhost:3000').toString(),
+                url: 'https://problems.amlg.top/api/crawl-page?auto=true',
                 body: {},
                 headers: {
                   'x-vercel-cron-schedule': '1',
