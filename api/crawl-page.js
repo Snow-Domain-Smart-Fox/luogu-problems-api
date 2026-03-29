@@ -110,10 +110,10 @@ export default async function handler(request, response) {
           console.log(`Auto-chaining: Will schedule page ${result.nextPage} in 5 seconds via QStash...`);
           
           // 检查 QStash 配置
-          const hasQStashConfig = !!(process.env.QSTASH_URL && process.env.QSTASH_SIGNING_KEY);
+          const hasQStashConfig = !!(process.env.QSTASH_URL && process.env.QSTASH_TOKEN);
           console.log('QStash config check:', {
             hasURL: !!process.env.QSTASH_URL,
-            hasToken: !!process.env.QSTASH_SIGNING_KEY,
+            hasToken: !!process.env.QSTASH_TOKEN,
             clientInitialized: !!qstashClient
           });
           
