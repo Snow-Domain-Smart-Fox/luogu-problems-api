@@ -307,6 +307,8 @@ GET /api/crawl-page?force=true
    - 点击 **Save** 创建表
    
    **表 2: crawl_tasks（爬取任务管理）**
+   
+   **方法 A：使用 Table Editor（图形界面）**
    - 再次点击 **New table**
    - 填写表信息：
      - **Name**: crawl_tasks
@@ -320,10 +322,57 @@ GET /api/crawl-page?force=true
      | current_page | int8 | ❌ 否 | 0 | 当前页码 |
      | total_pages | int8 | ❌ 否 | 0 | 总页数 |
      | problems_crawled | int8 | ❌ 否 | 0 | 已爬取题目数 |
+     | type_page_totals | jsonb | ✅ 是 | null | 各题型总页数缓存（JSON 对象） |
+     | crawled_pages | text[] | ✅ 是 | null | 已爬取页面记录（数组） |
      | error_message | text | ✅ 是 | null | 错误信息 |
      | created_at | timestamp | ❌ 否 | now() | 创建时间 |
      | updated_at | timestamp | ❌ 否 | now() | 更新时间 |
    - 点击 **Save** 创建表
+   
+   **方法 B：使用 SQL Editor（推荐）**
+   - 在 Supabase Dashboard 中，点击左侧菜单的 **SQL Editor**
+   - 点击 **New query**
+   - 粘贴以下 SQL 并运行：
+   ```sql
+   -- 创建爬取任务管理表
+   CREATE TABLE IF NOT EXISTS public.crawl_tasks (
+     id BIGSERIAL PRIMARY KEY,
+     status TEXT NOT NULL DEFAULT 'pending',
+     current_type TEXT,
+     current_page BIGINT NOT NULL DEFAULT 0,
+     total_pages BIGINT NOT NULL DEFAULT 0,
+     problems_crawled BIGINT NOT NULL DEFAULT 0,
+     type_page_totals JSONB,
+     crawled_pages TEXT[],
+     error_message TEXT,
+     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+   );
+   
+   -- 创建索引以优化查询性能
+   CREATE INDEX IF NOT EXISTS idx_crawl_tasks_status ON public.crawl_tasks(status);
+   CREATE INDEX IF NOT EXISTS idx_crawl_tasks_created_at ON public.crawl_tasks(created_at DESC);
+   ```
+   - 点击 **Run** 执行 SQL
+   - 验证表创建成功：在 **Table Editor** 中应该能看到 `crawl_tasks` 表
+
+4. **清空表数据（可选）**
+   
+   如果需要清空表中的所有数据（保留表结构），可以使用以下 SQL：
+   
+   ```sql
+   -- 清空 problems 表
+   TRUNCATE TABLE public.problems RESTART IDENTITY CASCADE;
+   
+   -- 清空 crawl_tasks 表
+   TRUNCATE TABLE public.crawl_tasks RESTART IDENTITY CASCADE;
+   ```
+   
+   **说明**：
+   - `TRUNCATE` 比 `DELETE` 更快，适合清空整个表
+   - `RESTART IDENTITY` 会重置自增列（如 id）从 1 开始
+   - `CASCADE` 会级联清空相关的外键依赖表
+   - ⚠️ **警告**：此操作不可逆，请谨慎使用！
 
 3. **获取 Supabase 连接信息**
    - 在 Supabase Dashboard 中，点击左侧菜单的 **Project Settings**
