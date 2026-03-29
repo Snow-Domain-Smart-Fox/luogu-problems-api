@@ -1,5 +1,5 @@
 import { initCrawlTask, getNextTaskToProcess, getLatestCrawlTask } from '../lib/crawl-tasks.js';
-import { crawlSinglePage } from '../lib/crawler.js';
+import { crawlSinglePage, sleep } from '../lib/crawler.js';
 
 export default async function handler(request, response) {
   try {
@@ -104,28 +104,27 @@ export default async function handler(request, response) {
           console.log(`Auto-chaining: Will trigger page ${result.nextPage} in 10 seconds...`);
           
           // 10 秒后异步触发下一个 crawl-page
-          setTimeout(async () => {
-            try {
-              const baseUrl = request.headers.host 
-                ? `https://${request.headers.host}/api/crawl-page?auto=true`
-                : `/api/crawl-page?auto=true`;
-              
-              console.log(`Triggering next page: ${baseUrl}`);
-              
-              // 使用 fetch 触发下一个请求（生产环境）
-              if (process.env.VERCEL === '1') {
-                await fetch(`https://${request.headers.host}/api/crawl-page?auto=true`, {
-                  method: 'GET',
-                  headers: {
-                    'x-vercel-cron-schedule': '1',
-                    'authorization': "Bearer " + process.env.CRON_SECRET || ''
-                  }
-                });
-              }
-            } catch (err) {
-              console.error('Error triggering next page:', err);
+          await sleep(10000);
+          try {
+            const baseUrl = request.headers.host 
+              ? `https://${request.headers.host}/api/crawl-page?auto=true`
+              : `/api/crawl-page?auto=true`;
+            
+            console.log(`Triggering next page: ${baseUrl}`);
+            
+            // 使用 fetch 触发下一个请求（生产环境）
+            if (process.env.VERCEL === '1') {
+              await fetch(`https://${request.headers.host}/api/crawl-page?auto=true`, {
+                method: 'GET',
+                headers: {
+                  'x-vercel-cron-schedule': '1',
+                  'authorization': "Bearer " + process.env.CRON_SECRET || ''
+                }
+              });
             }
-          }, 10000); // 10 秒后触发
+          } catch (err) {
+            console.error('Error triggering next page:', err);
+          }
         }
         
         return response.status(200).json({
