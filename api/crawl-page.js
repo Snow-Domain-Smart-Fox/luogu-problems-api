@@ -113,21 +113,14 @@ export default async function handler(request, response) {
             
             // 使用 fetch 触发下一个请求（生产环境）
             if (process.env.VERCEL === '1') {
-              const fetchResponse = await fetch(baseUrl, {
+              fetch(baseUrl, {
                 method: 'GET',
                 headers: {
                   'x-vercel-cron-schedule': '1',
                   'authorization': "Bearer " + process.env.CRON_SECRET || ''
                 }
               });
-              
-              if (!fetchResponse.ok) {
-                console.error('Error: Next page request failed with status:', fetchResponse.status);
-                const errorText = await fetchResponse.text();
-                console.error('Error response:', errorText);
-              } else {
-                console.log('Next page triggered successfully!');
-              }
+              console.log('Next page triggered successfully!');
             }
           } catch (err) {
             console.error('Error triggering next page:', err.message);
