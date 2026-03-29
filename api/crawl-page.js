@@ -8,7 +8,7 @@ export default async function handler(request, response) {
     }
 
     const isVercelCron = Boolean(request.headers['x-vercel-cron-schedule']);
-    const cronSecret = request.headers['x-vercel-cron-secret'];
+    const cronSecret = request.headers['authorization'];
     const expectedSecret = process.env.CRON_SECRET;
     const isProduction = process.env.VERCEL === '1';
     
