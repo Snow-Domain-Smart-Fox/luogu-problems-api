@@ -1,5 +1,4 @@
 node_modules
-pacage-lock.json
 .env
 .DS_Store
 .vscode
