@@ -129,6 +129,7 @@ export default async function handler(request, response) {
             } catch (err) {
               console.error('Error scheduling next page via QStash:', err.message);
               console.error('Stack trace:', err.stack);
+              console.log('Error details:', err);
             }
           } else {
             console.warn('QStash not configured, skipping auto-chain');
