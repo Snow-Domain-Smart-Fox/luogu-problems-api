@@ -14,9 +14,13 @@ export default async function handler(request, response) {
     
     if (isProduction) {
       if (!isVercelCron) {
+        console.log('Crawl job triggered by unknown source');
+        console.log('Headers:', request.headers);
         return response.status(403).json({ error: 'Unauthorized - Cron header missing' });
       }
-      if (expectedSecret && cronSecret !== expectedSecret) {
+      if (expectedSecret && cronSecret !== "Bearer " + expectedSecret) {
+        console.log('Crawl job triggered with invalid secret');
+        console.log('Headers:', request.headers);
         return response.status(403).json({ error: 'Unauthorized - Invalid secret' });
       }
     }
@@ -82,6 +86,9 @@ export default async function handler(request, response) {
     
     if (result.success) {
       if (result.completed) {
+        console.log('Crawl completed successfully!');
+        console.log('Task:', task);
+        console.log('Result:', result);
         return response.status(200).json({
           message: 'Crawl completed successfully!',
           taskId: task.id,
@@ -111,7 +118,7 @@ export default async function handler(request, response) {
                   method: 'GET',
                   headers: {
                     'x-vercel-cron-schedule': '1',
-                    'x-vercel-cron-secret': process.env.CRON_SECRET || ''
+                    'authorization': "Bearer " + process.env.CRON_SECRET || ''
                   }
                 });
               }
