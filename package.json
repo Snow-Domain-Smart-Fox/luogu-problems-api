@@ -1,0 +1,16 @@
+{
+  "name": "luogu-problems-api",
+  "version": "1.0.1",
+  "description": "Luogu problems API deployed on Vercel",
+  "type": "module",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "axios": "^1.7.0",
+    "cheerio": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "author": "",
+  "license": "MIT"
+}
