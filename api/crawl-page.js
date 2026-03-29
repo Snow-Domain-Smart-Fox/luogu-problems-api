@@ -99,37 +99,8 @@ export default async function handler(request, response) {
         // 检查是否是自动连续触发模式
         const isAutoChain = request.query.auto === 'true';
         
-        if (isAutoChain && !result.skipped) {
-          // 自动连续触发模式：10 秒后触发下一页
-          console.log(`Auto-chaining: Will trigger page ${result.nextPage} in 10 seconds...`);
-          
-          // 10 秒后异步触发下一个 crawl-page
-          await sleep(10000);
-          try {
-            const baseUrl = request.headers.host 
-              ? `https://${request.headers.host}/api/crawl-page?auto=true`
-              : `/api/crawl-page?auto=true`;
-            
-            console.log(`Triggering next page: ${baseUrl}`);
-            
-            // 使用 fetch 触发下一个请求（生产环境）
-            if (process.env.VERCEL === '1') {
-              console.log('Triggering next page:', baseUrl);
-              await fetch(baseUrl, {
-                method: 'GET',
-                headers: {
-                  'x-vercel-cron-schedule': '1',
-                  'authorization': "Bearer " + process.env.CRON_SECRET || ''
-                }
-              });
-              console.log('Next page triggered successfully!');
-            }
-          } catch (err) {
-            console.error('Error triggering next page:', err);
-          }
-        }
-        
-        return response.status(200).json({
+        // 准备响应数据
+        const responseData = {
           message: result.skipped ? `Skipped ${type} page ${page} (already crawled)` : `Crawled ${type} page ${page} successfully`,
           taskId: task.id,
           completed: false,
@@ -137,8 +108,43 @@ export default async function handler(request, response) {
           nextPage: result.nextPage,
           skipped: result.skipped || false,
           autoChain: isAutoChain && !result.skipped,
-          nextTrigger: isAutoChain && !result.skipped ? '10 seconds' : null
-        });
+          nextTrigger: isAutoChain && !result.skipped ? 'immediate' : null
+        };
+        
+        // 先发送响应
+        response.status(200).json(responseData);
+        
+        // 如果是自动连续触发模式且未跳过，异步触发下一个请求
+        if (isAutoChain && !result.skipped) {
+          console.log(`Auto-chaining: Triggering page ${result.nextPage} immediately...`);
+          
+          // 使用 setImmediate 在当前请求结束后异步触发
+          setImmediate(async () => {
+            try {
+              const baseUrl = request.headers.host 
+                ? `https://${request.headers.host}/api/crawl-page?auto=true`
+                : `/api/crawl-page?auto=true`;
+              
+              console.log(`Triggering next page: ${baseUrl}`);
+              
+              // 使用 fetch 触发下一个请求（生产环境）
+              if (process.env.VERCEL === '1') {
+                await fetch(baseUrl, {
+                  method: 'GET',
+                  headers: {
+                    'x-vercel-cron-schedule': '1',
+                    'authorization': "Bearer " + process.env.CRON_SECRET || ''
+                  }
+                });
+                console.log('Next page triggered successfully!');
+              }
+            } catch (err) {
+              console.error('Error triggering next page:', err);
+            }
+          });
+        }
+        
+        return; // 已经发送响应，直接返回
       }
     } else {
       return response.status(500).json({
