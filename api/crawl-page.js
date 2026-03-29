@@ -114,13 +114,15 @@ export default async function handler(request, response) {
             
             // 使用 fetch 触发下一个请求（生产环境）
             if (process.env.VERCEL === '1') {
-              await fetch(`https://${request.headers.host}/api/crawl-page?auto=true`, {
+              console.log('Triggering next page:', baseUrl);
+              await fetch(baseUrl, {
                 method: 'GET',
                 headers: {
                   'x-vercel-cron-schedule': '1',
                   'authorization': "Bearer " + process.env.CRON_SECRET || ''
                 }
               });
+              console.log('Next page triggered successfully!');
             }
           } catch (err) {
             console.error('Error triggering next page:', err);
