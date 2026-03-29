@@ -12,9 +12,6 @@ const qstashClient = process.env.QSTASH_URL && process.env.QSTASH_TOKEN
 
 export default async function handler(request, response) {
   try {
-    if (request.method !== 'GET') {
-      return response.status(405).json({ error: 'Method not allowed' });
-    }
 
     const isVercelCron = Boolean(request.headers['x-vercel-cron-schedule']);
     const cronSecret = request.headers['authorization'];
