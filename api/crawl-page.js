@@ -105,7 +105,7 @@ export default async function handler(request, response) {
           
           try {
             // 等待 5 秒
-            await sleep(50000);
+            await sleep(5000);
             
             const baseUrl = `https://problems.amlg.top/api/crawl-page?auto=true`;
             
