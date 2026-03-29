@@ -101,15 +101,13 @@ export default async function handler(request, response) {
         
         // 如果是自动连续触发模式且未跳过，等待 10 秒后触发下一个请求
         if (isAutoChain && !result.skipped) {
-          console.log(`Auto-chaining: Will trigger page ${result.nextPage} in 10 seconds...`);
+          console.log(`Auto-chaining: Will trigger page ${result.nextPage} in 5 seconds...`);
           
           try {
             // 等待 5 秒
             await sleep(50000);
             
-            const baseUrl = request.headers.host 
-              ? `https://${request.headers.host}/api/crawl-page?auto=true`
-              : `/api/crawl-page?auto=true`;
+            const baseUrl = `https://problems.amlg.top/api/crawl-page?auto=true`;
             
             console.log(`Triggering next page: ${baseUrl}`);
             
