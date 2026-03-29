@@ -3,10 +3,10 @@ import { crawlSinglePage, sleep } from '../lib/crawler.js';
 import { Client as QstashClient } from '@upstash/qstash';
 
 // 初始化 QStash 客户端
-const qstashClient = process.env.QSTASH_URL && process.env.QSTASH_SIGNING_KEY
+const qstashClient = process.env.QSTASH_URL && process.env.QSTASH_TOKEN
   ? new QstashClient({
       url: process.env.QSTASH_URL,
-      token: process.env.QSTASH_SIGNING_KEY
+      token: process.env.QSTASH_TOKEN
     })
   : null;
 
