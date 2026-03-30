@@ -1,5 +1,43 @@
 {
   "version": 2,
+  "headers": [
+    {
+      "source": "/api/all",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=2678400, stale-while-revalidate=2678400"
+        }
+      ]
+    },
+    {
+      "source": "/api/crawl-status",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=300, stale-while-revalidate=300"
+        }
+      ]
+    },
+    {
+      "source": "/api",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=2678400, stale-while-revalidate=2678400"
+        }
+      ]
+    },
+    {
+      "source": "/",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, s-maxage=2678400, stale-while-revalidate=2678400"
+        }
+      ]
+    }
+  ],
   "routes": [
     {
       "src": "/api/all",

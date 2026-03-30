@@ -4,18 +4,25 @@ import { getAllProblems } from '../lib/db.js';
 export default async function handler(request, response) {
   try {
     if (request.method !== 'GET') {
-      return response.status(405).json({ error: 'Method not allowed' });
+      response.writeHead(405, { 'Content-Type': 'application/json' });
+      response.end(JSON.stringify({ error: 'Method not allowed' }));
+      return;
     }
 
     const task = await getLatestCrawlTask();
     const problems = await getAllProblems();
 
     if (!task) {
-      return response.status(200).json({
+      response.writeHead(200, {
+        'Content-Type': 'application/json',
+        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300'
+      });
+      response.end(JSON.stringify({
         status: 'idle',
         message: 'No crawl tasks found',
         problemsCount: problems ? problems.length : 0
-      });
+      }));
+      return;
     }
 
     const totalEstimatedPages = getAllProblemTypes().length * 50;
@@ -62,10 +69,14 @@ export default async function handler(request, response) {
       statusData.message = 'Waiting to start crawl';
     }
 
-    response.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=300');
-    return response.status(200).json(statusData);
+    response.writeHead(200, {
+      'Content-Type': 'application/json',
+      'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=300'
+    });
+    response.end(JSON.stringify(statusData));
   } catch (error) {
     console.error('Error in crawl-status:', error);
-    return response.status(500).json({ error: 'Internal server error' });
+    response.writeHead(500, { 'Content-Type': 'application/json' });
+    response.end(JSON.stringify({ error: 'Internal server error' }));
   }
 }
