@@ -1,5 +1,5 @@
 export default async function handler(request, response) {
-  response.setHeader('Cache-Control', 'public, s-maxage=2678400, stale-while-revalidate');
+  response.setHeader('Cache-Control', 'public, s-maxage=2678400, stale-while-revalidate=2678400');
   response.status(200).json({
     message: 'Luogu Problems API',
     description: 'Programming problems API with auto-resume crawl capability',

@@ -62,7 +62,7 @@ export default async function handler(request, response) {
       statusData.message = 'Waiting to start crawl';
     }
 
-    response.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate');
+    response.setHeader('Cache-Control', 'public, s-maxage=300, stale-while-revalidate=300');
     return response.status(200).json(statusData);
   } catch (error) {
     console.error('Error in crawl-status:', error);
