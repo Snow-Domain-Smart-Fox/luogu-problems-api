@@ -7,6 +7,7 @@ export default async function handler(request, response) {
     }
     
     const problems = await getAllProblems();
+    response.setHeader('Cache-Control', 'public, s-maxage=2678400, stale-while-revalidate');
     return response.status(200).json(problems);
   } catch (error) {
     console.error('Error in /api/all:', error);
