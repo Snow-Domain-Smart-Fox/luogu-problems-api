@@ -1,3 +1,7 @@
+# 声明
+
+本仓库部分源代码来自 <https://github.com/laikit-dev/luogu-saver>。
+
 # Luogu Problems API
 
 可直接部署在 Vercel 平台的编程题目 API 服务。
