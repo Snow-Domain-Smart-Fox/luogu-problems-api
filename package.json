@@ -6,7 +6,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "@upstash/qstash": "^2.9.0",
-    "axios": "^1.7.0",
+    "cfscrape": "^2.1.2",
     "cheerio": "^1.0.0"
   },
   "engines": {
