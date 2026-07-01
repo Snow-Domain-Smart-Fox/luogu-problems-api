@@ -10,7 +10,7 @@
     "cloudscraper": "^5.0.0"
   },
   "engines": {
-    "node": "18.x"
+    "node": "24.x"
   },
   "author": "",
   "license": "MIT"
