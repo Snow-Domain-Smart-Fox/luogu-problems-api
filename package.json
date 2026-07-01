@@ -6,11 +6,11 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "@upstash/qstash": "^2.9.0",
-    "cfscrape": "^2.1.2",
-    "cheerio": "^1.0.0"
+    "cheerio": "^1.0.0",
+    "cloudscraper": "^5.0.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": "18.x"
   },
   "author": "",
   "license": "MIT"
