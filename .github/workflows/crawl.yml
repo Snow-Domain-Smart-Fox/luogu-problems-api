@@ -1,0 +1,40 @@
+name: Monthly Crawl Runner (Asia/Shanghai 00:00)
+
+on:
+  # run once per month at 16:00 UTC => 00:00 Asia/Shanghai on the 1st
+  schedule:
+    - cron: '0 16 1 * *'
+  workflow_dispatch:
+
+concurrency:
+  group: monthly-crawl-runner
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright Chromium (optional; required if not using remote browser)
+        run: npx playwright install chromium
+
+      - name: Run crawler runner
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          PLAYWRIGHT_WS_ENDPOINT: ${{ secrets.PLAYWRIGHT_WS_ENDPOINT }}
+          QSTASH_URL: ${{ secrets.QSTASH_URL }}
+          QSTASH_TOKEN: ${{ secrets.QSTASH_TOKEN }}
+          MAX_CRAWL_ITER: '200'
+        run: node scripts/runner.js
