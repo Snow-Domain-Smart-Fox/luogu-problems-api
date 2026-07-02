@@ -1,7 +1,6 @@
 name: Monthly Crawl Runner (Asia/Shanghai 00:00)
 
 on:
-  # run once per month at 16:00 UTC => 00:00 Asia/Shanghai on the 1st
   schedule:
     - cron: '0 16 1 * *'
   workflow_dispatch:
@@ -23,7 +22,7 @@ jobs:
           node-version: '24'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Install Playwright Chromium (optional; required if not using remote browser)
         run: npx playwright install chromium
@@ -38,3 +37,4 @@ jobs:
           QSTASH_TOKEN: ${{ secrets.QSTASH_TOKEN }}
           MAX_CRAWL_ITER: '200'
         run: node scripts/runner.js
+
