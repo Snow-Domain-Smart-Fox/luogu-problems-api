@@ -23,7 +23,7 @@ jobs:
           node-version: '24'
 
       - name: Install dependencies
-        run: npm ci
+        run: npm install
 
       - name: Install Playwright Chromium (optional; required if not using remote browser)
         run: npx playwright install chromium
