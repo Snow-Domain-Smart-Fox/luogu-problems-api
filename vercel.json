@@ -77,5 +77,11 @@
       "path": "/api/crawl-page?auto=true",
       "schedule": "10 0 1 * *"
     }
-  ]
+  ],
+  "functions": {
+    "api/crawl-page.js": {
+      "memory": 1024,
+      "maxDuration": 60
+    }
+  }
 }
