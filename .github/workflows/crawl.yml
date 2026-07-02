@@ -1,8 +1,9 @@
-name: Monthly Crawl Runner (Asia/Shanghai 00:00)
+name: Daily Crawl Runner (Asia/Shanghai 00:00)
 
 on:
   schedule:
-    - cron: '0 16 1 * *'
+    # 每天 Asia/Shanghai 00:00 执行（UTC 16:00）
+    - cron: '0 16 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -12,9 +13,15 @@ concurrency:
 jobs:
   crawl:
     runs-on: ubuntu-latest
+    env:
+      # 非月首的行为：continue / copy / exit
+      CONTINUE_POLICY: 'continue'
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          # 允许运行时的 GITHUB_TOKEN 做 push
+          persist-credentials: true
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -27,6 +34,88 @@ jobs:
       - name: Install Playwright Chromium (optional; required if not using remote browser)
         run: npx playwright install chromium
 
+      - name: Prepare/maintain tasks files
+        id: tasks
+        run: |
+          set -euo pipefail
+          # 使用 UTC+8 (Asia/Shanghai) 作为本地日期基准，保持与你原仓库注释一致
+          DATE=$(TZ=Asia/Shanghai date +%Y-%m-%d)
+          DAY=$(TZ=Asia/Shanghai date +%d)
+          echo "DATE=$DATE" >> $GITHUB_OUTPUT
+          echo "DAY=$DAY" >> $GITHUB_OUTPUT
+
+          mkdir -p tasks
+          latest=$(ls -1 tasks/*.js 2>/dev/null | sort || true | tail -n1 || true)
+          if [ -n "$latest" ]; then
+            echo "LATEST=$latest" >> $GITHUB_OUTPUT
+          else
+            echo "LATEST=" >> $GITHUB_OUTPUT
+          fi
+
+          POLICY="${{ env.CONTINUE_POLICY }}"
+          TODAY_FILE="tasks/task-${DATE}.js"
+
+          if [ "$DAY" = "01" ]; then
+            if [ -f "$TODAY_FILE" ]; then
+              echo "Monthly task already exists: $TODAY_FILE"
+            else
+              cat > "$TODAY_FILE" <<'JS'
+/**
+ * 自动生成的月初任务模板
+ * 在这里实现本月第一次任务逻辑
+ */
+module.exports = async function task() {
+  console.log("Running monthly task for DATE_PLACEHOLDER");
+  // TODO: implement task logic
+};
+JS
+              sed -i "s/DATE_PLACEHOLDER/${DATE}/g" "$TODAY_FILE"
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add "$TODAY_FILE"
+              git commit -m "chore: create monthly task ${TODAY_FILE}" || echo "no changes to commit"
+              git push || echo "git push failed"
+            fi
+            # 将当日任务作为输出
+            echo "TASK_FILE=$TODAY_FILE" >> $GITHUB_OUTPUT
+          else
+            # 非月首
+            if [ -z "$latest" ]; then
+              echo "No previous task found. Exiting with 0." 
+              exit 0
+            fi
+
+            case "$POLICY" in
+              continue)
+                echo "Continuing with previous task: $latest"
+                echo "TASK_FILE=$latest" >> $GITHUB_OUTPUT
+                ;;
+              copy)
+                if [ -f "$TODAY_FILE" ]; then
+                  echo "Today's task file already exists: $TODAY_FILE"
+                else
+                  echo "Copying $latest -> $TODAY_FILE"
+                  cp "$latest" "$TODAY_FILE"
+                  sed -i "s/DATE_PLACEHOLDER/${DATE}/g" "$TODAY_FILE" || true
+                  git config user.name "github-actions[bot]"
+                  git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+                  git add "$TODAY_FILE"
+                  git commit -m "chore: continue task by copying ${TODAY_FILE} from ${latest}" || echo "no changes to commit"
+                  git push || echo "git push failed"
+                fi
+                echo "TASK_FILE=$TODAY_FILE" >> $GITHUB_OUTPUT
+                ;;
+              exit)
+                echo "Policy is exit. Exiting with 0."
+                exit 0
+                ;;
+              *)
+                echo "Unknown CONTINUE_POLICY: $POLICY. Exiting." >&2
+                exit 1
+                ;;
+            esac
+          fi
+
       - name: Run crawler runner
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -36,5 +125,5 @@ jobs:
           QSTASH_URL: ${{ secrets.QSTASH_URL }}
           QSTASH_TOKEN: ${{ secrets.QSTASH_TOKEN }}
           MAX_CRAWL_ITER: '200'
+          TASK_FILE: ${{ steps.tasks.outputs.TASK_FILE }}
         run: node scripts/runner.js
-
