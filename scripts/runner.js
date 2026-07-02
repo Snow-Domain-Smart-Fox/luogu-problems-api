@@ -5,21 +5,40 @@ async function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
+function isFirstDayInShanghai() {
+  // 返回 Asia/Shanghai 时区的“日”是否为 1
+  const dayStr = new Intl.DateTimeFormat('en-US', {
+    timeZone: 'Asia/Shanghai',
+    day: '2-digit',
+  }).format(new Date());
+  return parseInt(dayStr, 10) === 1;
+}
+
 async function main() {
+  let task;
   try {
     console.log('Runner started');
 
-    // 先尝试取出已有的未完成任务（pending / running）
-    let task = await getNextTaskToProcess();
-    if (task) {
-      console.log('Found existing pending/running task — will continue:', task.id);
+    const firstDay = isFirstDayInShanghai();
+    if (firstDay) {
+      console.log('Today is the first day of the month (Asia/Shanghai) — creating a new crawl task...');
+      // 这里传 true/false 取决于 initCrawlTask 的语义；若需要删除旧任务请传 true。
+      // 我这里使用 true 来确保创建全新的任务；如需改回不删除旧任务请告诉我。
+      task = await initCrawlTask(true);
     } else {
-      console.log('No pending task found, creating a new one...');
-      task = await initCrawlTask(false); // 不删除旧任务
+      // 非每月第一天：只延续已有的任务；找不到则直接退出(0)
+      console.log('Not the first day of month — attempting to continue an existing pending/running task...');
+      task = await getNextTaskToProcess();
+      if (!task) {
+        console.log('No pending/running task found and today is not the first of the month — nothing to do. Exiting.');
+        process.exit(0);
+      } else {
+        console.log('Found existing pending/running task — will continue:', task.id);
+      }
     }
 
     if (!task) {
-      console.error('Failed to obtain or initialize a task. Exiting.');
+      console.error('Failed to obtain or initialize a task. Exiting with error.');
       process.exit(1);
     }
 
