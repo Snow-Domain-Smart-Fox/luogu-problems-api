@@ -1,4 +1,4 @@
-import { initCrawlTask, getNextTaskToProcess } from '../lib/crawl-tasks.js';
+import { initCrawlTask } from '../lib/crawl-tasks.js';
 import { crawlSinglePage } from '../lib/crawler.js';
 
 async function sleep(ms) {
@@ -9,33 +9,29 @@ async function main() {
   try {
     console.log('Runner started');
 
-    // Try to get an existing pending/running task
-    let task = await getNextTaskToProcess();
-    if (!task) {
-      console.log('No pending task found, initializing a new one...');
-      task = await initCrawlTask(false);
-    }
+    // 每次运行都创建一个新的 Supabase 任务（forceRefresh = true 会删除旧任务）
+    console.log('Creating a fresh crawl task (forceRefresh=true)...');
+    const task = await initCrawlTask(true);
 
     if (!task) {
-      console.error('Failed to obtain or initialize a task. Exiting.');
+      console.error('Failed to create a new crawl task. Exiting.');
       process.exit(1);
     }
 
-    console.log('Processing task', task.id);
+    console.log('Processing new task', task.id);
 
-    // Process pages in a loop with a safety cap to avoid infinite runs in Actions
-    const MAX_ITER = Number(process.env.MAX_CRAWL_ITER) || 500;
     let type = task.current_type || 'luogu';
     let page = task.current_page || 1;
 
-    for (let i = 0; i < MAX_ITER; i++) {
-      console.log(`Iteration ${i + 1}/${MAX_ITER} - Crawling ${type} page ${page} for task ${task.id}`);
+    // 一直运行直到该任务完成或出现不可恢复的错误
+    while (true) {
+      console.log(`Crawling ${type} page ${page} for task ${task.id}`);
       const result = await crawlSinglePage(task.id, type, page, false);
       console.log('crawlSinglePage result:', JSON.stringify(result));
 
       if (!result.success) {
         console.error('Crawl failed for', type, page, 'error:', result.error);
-        // Exit non-zero to mark failure so you can investigate in Actions logs
+        // 标记失败并退出（Actions 将显示失败）
         process.exit(2);
       }
 
@@ -44,21 +40,12 @@ async function main() {
         break;
       }
 
-      // advance to next page/type as returned by the task
+      // advance to next page/type as returned
       type = result.nextType || type;
       page = result.nextPage || (page + 1);
 
-      // a small delay to avoid hammering services
+      // small polite delay
       await sleep(500);
-
-      // refresh task from DB in case it was updated elsewhere
-      const nextTask = await getNextTaskToProcess();
-      if (nextTask && nextTask.id !== task.id) {
-        console.log('Switching to a different task provided by queue:', nextTask.id);
-        task = nextTask;
-        type = task.current_type || 'luogu';
-        page = task.current_page || 1;
-      }
     }
 
     console.log('Runner finished');
