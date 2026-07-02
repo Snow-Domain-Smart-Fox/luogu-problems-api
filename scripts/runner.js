@@ -5,22 +5,9 @@ async function sleep(ms) {
   return new Promise((r) => setTimeout(r, ms));
 }
 
-function isAsiaShanghaiFirstOfMonth() {
-  // 获取 Asia/Shanghai 本地时间的日（1-31）
-  const sh = new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai' });
-  const shDate = new Date(sh);
-  return shDate.getDate() === 1;
-}
-
 async function main() {
   try {
     console.log('Runner started');
-
-    // 如果通过 Actions 的 daily-16:00 UTC 触发，但我们只在 Asia/Shanghai 的 1 日 00:00 执行
-    if (!isAsiaShanghaiFirstOfMonth()) {
-      console.log('Not Asia/Shanghai day 1 — exiting (this Actions run is a daily tick used to emulate monthly schedule).');
-      process.exit(0);
-    }
 
     // Try to get an existing pending/running task
     let task = await getNextTaskToProcess();
