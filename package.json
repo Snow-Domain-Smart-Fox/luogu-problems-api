@@ -3,9 +3,6 @@
   "version": "1.0.1",
   "description": "Luogu problems API deployed on Vercel",
   "type": "module",
-  "scripts": {
-    "postinstall": "npx playwright install-deps || true"
-  },
   "dependencies": {
     "@supabase/supabase-js": "^2.45.0",
     "@upstash/qstash": "^2.9.0",
