@@ -1,7 +1,6 @@
 name: Monthly Crawl Runner (Asia/Shanghai 00:00)
 
 on:
-  # run once per month at 16:00 UTC => 00:00 Asia/Shanghai on the 1st
   schedule:
     - cron: '0 16 1 * *'
   workflow_dispatch:
