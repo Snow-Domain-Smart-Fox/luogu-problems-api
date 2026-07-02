@@ -1,8 +1,8 @@
-name: Monthly Crawl Runner (Asia/Shanghai 00:00)
+name: Daily Crawl Runner (Asia/Shanghai 00:00)
 
 on:
   schedule:
-    - cron: '0 16 1 * *'
+    - cron: '0 16 * * *'
   workflow_dispatch:
 
 concurrency:
